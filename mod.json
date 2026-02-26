@@ -1,0 +1,63 @@
+{
+	"geode": "5.0.1",
+	"gd": {
+		"win": "2.2081"
+	},
+	"id": "olimbo.multitask",
+	"name": "Multitask",
+	"version": "v0.0.1",
+	"developer": "Olimbo",
+	"description": "Multitask is a way to allow playing geometry dash while doing other tasks.",
+	"settings": {
+		"enabled": {
+			"type": "boolean",
+			"default": true,
+			"description": "Enable or disable the mod"
+		},
+		"firstPlayerUpKey": {
+			"type": "keybind",
+			"name": "Up key for player 1",
+			"default": "Up",
+			"description": "Up"
+		},
+		"firstPlayerLeftKey": {
+			"type": "keybind",
+			"name": "Left key for player 1",
+			"default": "Left",
+			"description": "Left"
+		},
+		"firstPlayerRightKey": {
+			"type": "keybind",
+			"name": "Right key for player 1",
+			"default": "Right",
+			"description": "Right"
+		},
+		"secondPlayerUpKey": {
+			"type": "keybind",
+			"name": "Up key for player 2",
+			"default": "W",
+			"description": "Up"
+		},
+		"secondPlayerLeftKey": {
+			"type": "keybind",
+			"name": "Left key for player 2",
+			"default": "A",
+			"description": "Left"
+		},
+		"secondPlayerRightKey": {
+			"type": "keybind",
+			"name": "Right key for player 2",
+			"default": "D",
+			"description": "Right"
+		},
+		"pauseGameKey": {
+			"type": "keybind",
+			"name": "Pause game key",
+			"default": "Escape",
+			"description": "Pause game"
+		}
+	},
+	"dependencies": {
+		"geode.node-ids": ">=v1.20.0"
+	}
+}
