@@ -1,4 +1,3 @@
-// ReSharper disable CppHidingFunction
 #include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/modify/PauseLayer.hpp>
