@@ -3,11 +3,13 @@
 #include <Geode/modify/PauseLayer.hpp>
 
 #include <windows.h>
+#include <unordered_set>
 
 #include "GeodeKeybindMapper.h"
 
 using namespace geode::prelude;
 
+std::unordered_set<DWORD> gPressedKeys;
 
 HHOOK gHook = nullptr;
 
@@ -65,6 +67,20 @@ LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const 
 	if (code == HC_ACTION) {
 		auto const keyBoard = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 		DWORD const virtualKey = keyBoard->vkCode;
+
+		bool const isKeyDown = wParam == WM_KEYDOWN;
+		bool const isKeyUp = wParam == WM_KEYUP;
+
+		if (isKeyDown) {
+			if (gPressedKeys.contains(virtualKey)) {
+				return CallNextHookEx(gHook, code, wParam, lParam);
+			}
+			gPressedKeys.insert(virtualKey);
+		}
+
+		if (isKeyUp) {
+			gPressedKeys.erase(virtualKey);
+		}
 
 		auto const playLayer = PlayLayer::get();
 		auto const scene = CCDirector::get()->getRunningScene();

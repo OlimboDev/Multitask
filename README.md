@@ -1,23 +1,18 @@
 # Multitask
-This is where she makes a mod.
 
-<img src="logo.png" width="150" alt="the mod's logo" />
+## What is Multitask?
 
-*Update logo.png to change your mod's icon (please)*
+**Multitask** is a Geode mod that lets you play **Geometry Dash** while not in focus.
+This allows you to do things like play other games while being able to play Geometry Dash.
 
-## Getting started
-We recommend heading over to [the getting started section on our docs](https://docs.geode-sdk.org/getting-started/) for useful info on what to do next.
+---
 
-## Build instructions
-For more info, see [our docs](https://docs.geode-sdk.org/getting-started/create-mod#build)
-```sh
-# Assuming you have the Geode CLI set up already
-geode build
-```
+## Important to note
 
-# Resources
-* [Geode SDK Documentation](https://docs.geode-sdk.org/)
-* [Geode SDK Source Code](https://github.com/geode-sdk/geode/)
-* [Geode CLI](https://github.com/geode-sdk/cli)
-* [Bindings](https://github.com/geode-sdk/bindings/)
-* [Dev Tools](https://github.com/geode-sdk/DevTools)
+- To make this mod work, **Put the game in either windowed or borderless mode**. Fullscreen is not supported since fullscreen automatically hides the game when not in focus.
+
+
+- Although not required, we highly recommend **changing the keybind before using the mod**. The default keybinds are basic keybinds that are very highly to conflict with other games and apps.
+
+
+- The keybinds you choose **only work when the game is not foccused**. If the game is focused the game behaves like normal.

@@ -2,7 +2,6 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/loader/SettingV3.hpp>
-#include <Geode/loader/GameEvent.hpp>
 #include <optional>
 
 using namespace geode::prelude;

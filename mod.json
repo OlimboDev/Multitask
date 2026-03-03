@@ -2,12 +2,28 @@
 	"geode": "5.1.0",
 	"gd": {
 		"win": "2.2081"
+
 	},
 	"id": "olimbo.multitask",
 	"name": "Multitask",
-	"version": "v0.1.1",
-	"developer": "Olimbo",
-	"description": "Multitask is a way to allow playing geometry dash while doing other tasks.",
+	"version": "v0.0.1",
+	"developers": [
+		"Chillsy",
+		"Misha_Opstal"
+	],
+	"description": "Multitask is a way to allow playing geometry dash in the background.",
+	"links": {
+		"source": "https://github.com/OlimboDev/Multitask"
+	},
+	"issues": {
+		"info": "If you find any bugs or have suggestions we prefer you to report them on our GitHub issue tracker. if you don't have a GitHub account you can also report them to Chillsy. (includes the dot) or Misha_Opstal on Discord.",
+		"url": "https://github.com/OlimboDev/Multitask/issues"
+	},
+	"tags": [
+		"offline",
+		"enhancement",
+		"utility"
+	],
 	"settings": {
 		"enabled": {
 			"type": "bool",
@@ -59,6 +75,9 @@
 		}
 	},
 	"dependencies": {
-		"geode.node-ids": ">=v1.20.0"
+		"geode.node-ids": {
+			"version": ">=v1.20.0",
+			"importance": "required"
+		}
 	}
 }
