@@ -1,7 +1,8 @@
 #include <Geode/Geode.hpp>
+#include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/modify/PauseLayer.hpp>
-#include <Geode/Bindings.hpp>
+
 
 #include <windows.h>
 #include <unordered_set>
@@ -22,43 +23,44 @@ enum KeyAction {
 };
 
 
-void handlePlayLayerButton(WPARAM const wParam, KeyAction keyAction, bool isSecondPlayer = false) {
+void handleButton(WPARAM const wParam, KeyAction keyAction, bool const isFirstPlayer = false) {
+	const auto baseGameLayer = GJBaseGameLayer::get();
+	if (!baseGameLayer) {
+		return;
+	}
+
 	if (wParam == WM_KEYDOWN) {
-		queueInMainThread([keyAction, isSecondPlayer] {
-			if (const auto playLayer = PlayLayer::get()) {
-				switch (keyAction) {
-					case Left:
-						playLayer->handleButton(true, 0, isSecondPlayer);
-						break;
-					case Up:
-						playLayer->handleButton(true, 1, isSecondPlayer);
-						break;
-					case Right:
-						playLayer->handleButton(true, 2, isSecondPlayer);
-						break;
-					default:
-						break;
-				}
+		queueInMainThread([baseGameLayer, keyAction, isFirstPlayer] {
+			switch (keyAction) {
+				case Left:
+					baseGameLayer->handleButton(true, 0, isFirstPlayer);
+					break;
+				case Up:
+					baseGameLayer->handleButton(true, 1, isFirstPlayer);
+					break;
+				case Right:
+					baseGameLayer->handleButton(true, 2, isFirstPlayer);
+					break;
+				default:
+					break;
 			}
 		});
 	}
 
 	if (wParam == WM_KEYUP) {
-		queueInMainThread([keyAction, isSecondPlayer] {
-			if (const auto playLayer = PlayLayer::get()) {
-				switch (keyAction) {
-					case Left:
-						playLayer->handleButton(false, 0, isSecondPlayer);
-						break;
-					case Up:
-						playLayer->handleButton(false, 1, isSecondPlayer);
-						break;
-					case Right:
-						playLayer->handleButton(false, 2, isSecondPlayer);
-						break;
-					default:
-						break;
-				}
+		queueInMainThread([baseGameLayer, keyAction, isFirstPlayer] {
+			switch (keyAction) {
+				case Left:
+					baseGameLayer->handleButton(false, 0, isFirstPlayer);
+					break;
+				case Up:
+					baseGameLayer->handleButton(false, 1, isFirstPlayer);
+					break;
+				case Right:
+					baseGameLayer->handleButton(false, 2, isFirstPlayer);
+					break;
+				default:
+					break;
 			}
 		});
 	}
@@ -99,12 +101,12 @@ LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const 
 
 		auto const pauseGameKey = GeodeKeybindMapper::virtualKeyFromSetting("pauseGameKey");
 
-		if      (firstPlayerUpKey    && virtualKey ==* firstPlayerUpKey)    handlePlayLayerButton(wParam, Up,    false);
-		else if (firstPlayerLeftKey  && virtualKey ==* firstPlayerLeftKey)  handlePlayLayerButton(wParam, Left,  false);
-		else if (firstPlayerRightKey && virtualKey ==* firstPlayerRightKey) handlePlayLayerButton(wParam, Right, false);
-		else if (secondPlayerUpKey   && virtualKey ==* secondPlayerUpKey)   handlePlayLayerButton(wParam, Up,    true);
-		else if (secondPlayerLeftKey && virtualKey ==* secondPlayerLeftKey) handlePlayLayerButton(wParam, Left,  true);
-		else if (secondPlayerRightKey && virtualKey ==* secondPlayerRightKey) handlePlayLayerButton(wParam, Right, true);
+		if      (firstPlayerUpKey    && virtualKey ==* firstPlayerUpKey)    handleButton(wParam, Up,    true);
+		else if (firstPlayerLeftKey  && virtualKey ==* firstPlayerLeftKey)  handleButton(wParam, Left,  true);
+		else if (firstPlayerRightKey && virtualKey ==* firstPlayerRightKey) handleButton(wParam, Right, true);
+		else if (secondPlayerUpKey   && virtualKey ==* secondPlayerUpKey)   handleButton(wParam, Up,    false);
+		else if (secondPlayerLeftKey && virtualKey ==* secondPlayerLeftKey) handleButton(wParam, Left,  false);
+		else if (secondPlayerRightKey && virtualKey ==* secondPlayerRightKey) handleButton(wParam, Right, false);
 
 		if (pauseGameKey && virtualKey == static_cast<DWORD>(*pauseGameKey) && wParam == WM_KEYDOWN) {
 			queueInMainThread([scene] {
