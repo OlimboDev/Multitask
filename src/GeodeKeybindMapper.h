@@ -130,4 +130,8 @@ public:
 
         return std::nullopt;
     }
+
+    static std::optional<int> dummyKeybind() {
+        return 0;
+    }
 };

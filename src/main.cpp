@@ -12,17 +12,34 @@
 using namespace geode::prelude;
 
 std::unordered_set<DWORD> gPressedKeys;
+
 bool bIsInDeadDelay = false;
 int iDeathDelayFrames = 3;
 int iCurrentDeathDelayFrame = 0;
 
-HHOOK gHook = nullptr;
+// Keybinds
+static std::optional<int> firstPlayerUpKey    = GeodeKeybindMapper::dummyKeybind();
+static std::optional<int> firstPlayerLeftKey  = GeodeKeybindMapper::dummyKeybind();
+static std::optional<int> firstPlayerRightKey = GeodeKeybindMapper::dummyKeybind();
 
+static std::optional<int> secondPlayerUpKey    = GeodeKeybindMapper::dummyKeybind();
+static std::optional<int> secondPlayerLeftKey  = GeodeKeybindMapper::dummyKeybind();
+static std::optional<int> secondPlayerRightKey = GeodeKeybindMapper::dummyKeybind();
+
+static std::optional<int> pauseGameKey = GeodeKeybindMapper::dummyKeybind();
+
+HHOOK gHook = nullptr;
 
 enum KeyAction {
 	Left,
 	Up,
 	Right
+};
+
+enum SafeGuardResult {
+	Ignore,
+	Default,
+	Modded
 };
 
 
@@ -36,37 +53,90 @@ void handleButton(WPARAM const wParam, KeyAction keyAction, bool const isFirstPl
 		queueInMainThread([baseGameLayer, keyAction, isFirstPlayer] {
 			switch (keyAction) {
 				case Left:
-					baseGameLayer->handleButton(true, 0, isFirstPlayer);
-					break;
-				case Up:
-					baseGameLayer->handleButton(true, 1, isFirstPlayer);
-					break;
-				case Right:
-					baseGameLayer->handleButton(true, 2, isFirstPlayer);
-					break;
-				default:
-					break;
-			}
-		});
+				baseGameLayer->handleButton(true, 0, isFirstPlayer);
+				break;
+			case Up:
+				baseGameLayer->handleButton(true, 1, isFirstPlayer);
+				break;
+			case Right:
+				baseGameLayer->handleButton(true, 2, isFirstPlayer);
+				break;
+			default:
+				break;
+		}
+	});
 	}
 
 	if (wParam == WM_KEYUP) {
 		queueInMainThread([baseGameLayer, keyAction, isFirstPlayer] {
 			switch (keyAction) {
 				case Left:
-					baseGameLayer->handleButton(false, 0, isFirstPlayer);
-					break;
-				case Up:
-					baseGameLayer->handleButton(false, 1, isFirstPlayer);
-					break;
-				case Right:
-					baseGameLayer->handleButton(false, 2, isFirstPlayer);
-					break;
-				default:
-					break;
+				baseGameLayer->handleButton(false, 0, isFirstPlayer);
+				break;
+			case Up:
+				baseGameLayer->handleButton(false, 1, isFirstPlayer);
+				break;
+			case Right:
+				baseGameLayer->handleButton(false, 2, isFirstPlayer);
+				break;
+			default:
+				break;
+		}
+	});
+	}
+}
+
+void refreshKeybinds() {
+	firstPlayerUpKey    = GeodeKeybindMapper::virtualKeyFromSetting("firstPlayerUpKey");
+	firstPlayerLeftKey  = GeodeKeybindMapper::virtualKeyFromSetting("firstPlayerLeftKey");
+	firstPlayerRightKey = GeodeKeybindMapper::virtualKeyFromSetting("firstPlayerRightKey");
+
+	secondPlayerUpKey    = GeodeKeybindMapper::virtualKeyFromSetting("secondPlayerUpKey");
+	secondPlayerLeftKey  = GeodeKeybindMapper::virtualKeyFromSetting("secondPlayerLeftKey");
+	secondPlayerRightKey = GeodeKeybindMapper::virtualKeyFromSetting("secondPlayerRightKey");
+
+	pauseGameKey = GeodeKeybindMapper::virtualKeyFromSetting("pauseGameKey");
+}
+
+void handlePressedKeybinds(DWORD const virtualKey, WPARAM const wParam, CCScene* scene)
+{
+	if      (firstPlayerUpKey    && virtualKey ==* firstPlayerUpKey)    handleButton(wParam, Up,    true);
+	else if (firstPlayerLeftKey  && virtualKey ==* firstPlayerLeftKey)  handleButton(wParam, Left,  true);
+	else if (firstPlayerRightKey && virtualKey ==* firstPlayerRightKey) handleButton(wParam, Right, true);
+	else if (secondPlayerUpKey   && virtualKey ==* secondPlayerUpKey)   handleButton(wParam, Up,    false);
+	else if (secondPlayerLeftKey && virtualKey ==* secondPlayerLeftKey) handleButton(wParam, Left,  false);
+	else if (secondPlayerRightKey && virtualKey ==* secondPlayerRightKey) handleButton(wParam, Right, false);
+
+	if (pauseGameKey && virtualKey == static_cast<DWORD>(*pauseGameKey) && wParam == WM_KEYDOWN) {
+		queueInMainThread([scene] {
+			if (const auto playLayer = PlayLayer::get()) {
+				if (!playLayer->m_isPaused) {
+					playLayer->pauseGame(false);
+				} else {
+					playLayer->resume();
+					auto const pauseLayer = scene->getChildByType<PauseLayer>(0);
+					pauseLayer->onResume(nullptr);
+				}
 			}
 		});
 	}
+}
+
+SafeGuardResult CPSSafeGuard(bool const isKeyDown, bool const isKeyUp, DWORD const virtualKey)
+{
+	if (isKeyDown) {
+		if (gPressedKeys.contains(virtualKey)) {
+			return SafeGuardResult::Default;
+		}
+		gPressedKeys.insert(virtualKey);
+		return SafeGuardResult::Modded;
+	}
+
+	if (isKeyUp) {
+		gPressedKeys.erase(virtualKey);
+	}
+
+	return SafeGuardResult::Ignore;
 }
 
 LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const lParam) {
@@ -75,6 +145,8 @@ LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const 
 	}
 
 	if (code == HC_ACTION) {
+		CCScene* scene = CCDirector::get()->getRunningScene();
+
 		auto const keyBoard = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 		DWORD const virtualKey = keyBoard->vkCode;
 
@@ -92,51 +164,23 @@ LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const 
 			} else {
 				bIsInDeadDelay = false;
 				iCurrentDeathDelayFrame = 0;
+
+				// Clear pressed keys to prevent them from being "stuck" after dying
+				gPressedKeys.clear();
+
+				// Forcefully handle the button now
+				if (CPSSafeGuard(isKeyDown, isKeyUp, virtualKey) == SafeGuardResult::Modded || SafeGuardResult::Default)
+				{
+					handlePressedKeybinds(virtualKey, wParam, scene);
+				}
 			}
 		} else {
-			if (isKeyDown) {
-				if (gPressedKeys.contains(virtualKey)) {
-					return CallNextHookEx(gHook, code, wParam, lParam);
-				}
-				gPressedKeys.insert(virtualKey);
+			if (CPSSafeGuard(isKeyDown, isKeyUp, virtualKey) == SafeGuardResult::Default)
+			{
+				return CallNextHookEx(gHook, code, wParam, lParam);
 			}
 
-			if (isKeyUp) {
-				gPressedKeys.erase(virtualKey);
-			}
-		}
-
-		auto const scene = CCDirector::get()->getRunningScene();
-
-		auto const firstPlayerUpKey    = GeodeKeybindMapper::virtualKeyFromSetting("firstPlayerUpKey");
-		auto const firstPlayerLeftKey  = GeodeKeybindMapper::virtualKeyFromSetting("firstPlayerLeftKey");
-		auto const firstPlayerRightKey = GeodeKeybindMapper::virtualKeyFromSetting("firstPlayerRightKey");
-
-		auto const secondPlayerUpKey    = GeodeKeybindMapper::virtualKeyFromSetting("secondPlayerUpKey");
-		auto const secondPlayerLeftKey  = GeodeKeybindMapper::virtualKeyFromSetting("secondPlayerLeftKey");
-		auto const secondPlayerRightKey = GeodeKeybindMapper::virtualKeyFromSetting("secondPlayerRightKey");
-
-		auto const pauseGameKey = GeodeKeybindMapper::virtualKeyFromSetting("pauseGameKey");
-
-		if      (firstPlayerUpKey    && virtualKey ==* firstPlayerUpKey)    handleButton(wParam, Up,    true);
-		else if (firstPlayerLeftKey  && virtualKey ==* firstPlayerLeftKey)  handleButton(wParam, Left,  true);
-		else if (firstPlayerRightKey && virtualKey ==* firstPlayerRightKey) handleButton(wParam, Right, true);
-		else if (secondPlayerUpKey   && virtualKey ==* secondPlayerUpKey)   handleButton(wParam, Up,    false);
-		else if (secondPlayerLeftKey && virtualKey ==* secondPlayerLeftKey) handleButton(wParam, Left,  false);
-		else if (secondPlayerRightKey && virtualKey ==* secondPlayerRightKey) handleButton(wParam, Right, false);
-
-		if (pauseGameKey && virtualKey == static_cast<DWORD>(*pauseGameKey) && wParam == WM_KEYDOWN) {
-			queueInMainThread([scene] {
-				if (const auto playLayer = PlayLayer::get()) {
-					if (!playLayer->m_isPaused) {
-						playLayer->pauseGame(false);
-					} else {
-						playLayer->resume();
-						auto const pauseLayer = scene->getChildByType<PauseLayer>(0);
-						pauseLayer->onResume(nullptr);
-					}
-				}
-			});
+			handlePressedKeybinds(virtualKey, wParam, scene);
 		}
 	}
 
@@ -161,4 +205,12 @@ $on_mod(Loaded) {
 	if (!gHook) {
 		log::error("Hook failed: {}", GetLastError());
 	}
+
+	// Initialize keybinds
+	refreshKeybinds();
+}
+
+$on_mod(DataSaved) {
+	// Refresh keybinds in case they were changed
+	refreshKeybinds();
 }
