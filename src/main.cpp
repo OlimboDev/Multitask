@@ -12,6 +12,9 @@
 using namespace geode::prelude;
 
 std::unordered_set<DWORD> gPressedKeys;
+bool bIsInDeadDelay = false;
+int iDeathDelayFrames = 3;
+int iCurrentDeathDelayFrame = 0;
 
 HHOOK gHook = nullptr;
 
@@ -78,15 +81,29 @@ LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const 
 		bool const isKeyDown = wParam == WM_KEYDOWN;
 		bool const isKeyUp = wParam == WM_KEYUP;
 
-		if (isKeyDown) {
-			if (gPressedKeys.contains(virtualKey)) {
-				return CallNextHookEx(gHook, code, wParam, lParam);
-			}
-			gPressedKeys.insert(virtualKey);
+		// Did we die? If so we shouldn't perform the safeguard for clicking until we are at least 1 frame into the level, otherwise we won't be able to click at all.
+		if (isKeyDown && PlayLayer::get() && PlayLayer::get()->m_playerDied) {
+			bIsInDeadDelay = true;
 		}
 
-		if (isKeyUp) {
-			gPressedKeys.erase(virtualKey);
+		if (bIsInDeadDelay) {
+			if (iCurrentDeathDelayFrame < iDeathDelayFrames) {
+				iCurrentDeathDelayFrame++;
+			} else {
+				bIsInDeadDelay = false;
+				iCurrentDeathDelayFrame = 0;
+			}
+		} else {
+			if (isKeyDown) {
+				if (gPressedKeys.contains(virtualKey)) {
+					return CallNextHookEx(gHook, code, wParam, lParam);
+				}
+				gPressedKeys.insert(virtualKey);
+			}
+
+			if (isKeyUp) {
+				gPressedKeys.erase(virtualKey);
+			}
 		}
 
 		auto const scene = CCDirector::get()->getRunningScene();
