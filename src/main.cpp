@@ -24,7 +24,7 @@ enum KeyAction {
 
 
 void handleButton(WPARAM const wParam, KeyAction keyAction, bool const isFirstPlayer = false) {
-	const auto baseGameLayer = GJBaseGameLayer::get();
+	auto const baseGameLayer = GJBaseGameLayer::get();
 	if (!baseGameLayer) {
 		return;
 	}
@@ -125,6 +125,13 @@ LRESULT CALLBACK KeyboardProc(int const code, WPARAM const wParam, LPARAM const 
 
 	return CallNextHookEx(gHook, code, wParam, lParam);
 }
+
+class $modify(PlayLayer) {
+	void resetLevel() {
+		PlayLayer::resetLevel();
+		gPressedKeys.clear();
+	}
+};
 
 $on_mod(Loaded) {
 	gHook = SetWindowsHookEx(
