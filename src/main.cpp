@@ -14,7 +14,7 @@ using namespace geode::prelude;
 std::unordered_set<DWORD> gPressedKeys;
 
 bool bIsInDeadDelay = false;
-int iDeathDelayFrames = 3;
+int iDeathDelayFrames = 5;
 int iCurrentDeathDelayFrame = 0;
 
 // Keybinds
