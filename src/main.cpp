@@ -26,12 +26,12 @@ void handleButton(
     bool const isFirstPlayer = false
 ) {
     bool const isDown = wParam == WM_KEYDOWN;
-    int button;
+    PlayerButton button;
 
     switch (keyAction) {
-        case Left:  button = 0; break;
-        case Up:    button = 1; break;
-        case Right: button = 2; break;
+        case Left:  button = PlayerButton::Left; break;
+        case Up:    button = PlayerButton::Jump; break;
+        case Right: button = PlayerButton::Right; break;
         default:    return;
     }
 
@@ -39,9 +39,9 @@ void handleButton(
         auto const PlayLayer = PlayLayer::get();
         if (!PlayLayer) return;
 
-        PlayLayer->queueButton(button, isDown, !isFirstPlayer, false);
+        PlayLayer->queueButton(static_cast<int>(button), isDown, !isFirstPlayer, false);
 
-        if (button != 1) return;
+        if (static_cast<int>(button) != 1) return;
 
         auto const uiLayer = PlayLayer->getChildByType<UILayer>(0);
         if (!uiLayer) return;
@@ -126,7 +126,6 @@ LRESULT CALLBACK KeyboardProc(
         if (!pl) return;
 
         if (!pl->m_isPaused) {
-            pl->pauseGame(false);
             return;
         }
         auto const scene = CCDirector::get()->getRunningScene();
