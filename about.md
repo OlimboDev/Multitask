@@ -12,7 +12,7 @@ This allows you to do things like play other games while being able to play Geom
 - To make this mod work, **Put the game in either windowed or borderless mode**. Fullscreen is not supported since fullscreen automatically hides the game when not in focus.
 
 
-- Although not required, we highly recommend **changing the keybind before using the mod**. The default keybinds are basic keybinds that are very highly to conflict with other games and apps.
+- Although not required, we highly recommend **changing the keybind before using the mod**. The default keybinds are basic keybinds that are very likely to conflict with other games and apps.
 
 
-- The keybinds you choose **only work when the game is not foccused**. If the game is focused the game behaves like normal.
+- The keybinds you choose **only work when the game is not focused**. If the game is focused the game behaves like normal.
