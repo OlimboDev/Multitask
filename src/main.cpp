@@ -20,11 +20,7 @@ enum KeyAction {
     Right
 };
 
-void handleButton(
-    WPARAM const wParam,
-    KeyAction const keyAction,
-    bool const isFirstPlayer = false
-) {
+void handleButton(WPARAM const wParam, KeyAction const keyAction, bool const isFirstPlayer = false) {
     bool const isDown = wParam == WM_KEYDOWN;
     PlayerButton button;
 
@@ -36,35 +32,41 @@ void handleButton(
     }
 
     queueInMainThread([button, isDown, isFirstPlayer] {
-        auto const PlayLayer = PlayLayer::get();
-        if (!PlayLayer) return;
+        auto const playLayer = PlayLayer::get();
+        if (!playLayer) return;
 
-        PlayLayer->queueButton(static_cast<int>(button), isDown, !isFirstPlayer, false);
+        playLayer->queueButton(static_cast<int>(button), isDown, !isFirstPlayer, false);
 
         if (static_cast<int>(button) != 1) return;
 
-        auto const uiLayer = PlayLayer->getChildByType<UILayer>(0);
+        auto const uiLayer = playLayer->getChildByType<UILayer>(0);
         if (!uiLayer) return;
 
-        if (isFirstPlayer) {
-            uiLayer->m_p1Jumping = isDown;
-        } else {
-            uiLayer->m_p2Jumping = isDown;
-        }
+        if (isFirstPlayer) uiLayer->m_p1Jumping = isDown;
+        else uiLayer->m_p2Jumping = isDown;
     });
 }
 
-LRESULT CALLBACK KeyboardProc(
-    int const code,
-    WPARAM const wParam,
-    LPARAM const lParam
-) {
-    if (!Mod::get()->getSettingValue<bool>("enabled")) {
-        return CallNextHookEx(s_hook, code, wParam, lParam);
-    }
-    if (code != HC_ACTION) {
-        return CallNextHookEx(s_hook, code, wParam, lParam);
-    }
+void togglePause() {
+    auto const scene = CCDirector::get()->getRunningScene();
+    auto const playLayer = PlayLayer::get();
+    if (!playLayer) return;
+
+    queueInMainThread([scene, playLayer] {
+        if (playLayer->m_isPaused) {
+            playLayer->resume();
+            if (auto const pauseLayer = scene->getChildByType<PauseLayer>(0)) pauseLayer->onResume(nullptr);
+
+            return;
+        }
+
+        playLayer->pauseGame(false);
+    });
+}
+
+LRESULT CALLBACK keyboardProc(int const code, WPARAM const wParam, LPARAM const lParam) {
+    if (!Mod::get()->getSettingValue<bool>("enabled")) return CallNextHookEx(s_hook, code, wParam, lParam);
+    if (code != HC_ACTION) return CallNextHookEx(s_hook, code, wParam, lParam);
 
     auto const keyBoard = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
     DWORD const virtualKey = keyBoard->vkCode;
@@ -72,18 +74,12 @@ LRESULT CALLBACK KeyboardProc(
     bool const isKeyDown = wParam == WM_KEYDOWN;
     bool const isKeyUp = wParam == WM_KEYUP;
 
-    log::info("Key event → vk: {}, down: {}, up: {}", virtualKey, isKeyDown, isKeyUp);
-
     if (isKeyDown) {
-        if (s_pressedKeys.contains(virtualKey)) {
-            return CallNextHookEx(s_hook, code, wParam, lParam);
-        }
+        if (s_pressedKeys.contains(virtualKey)) return CallNextHookEx(s_hook, code, wParam, lParam);
         s_pressedKeys.insert(virtualKey);
     }
 
-    if (isKeyUp) {
-        s_pressedKeys.erase(virtualKey);
-    }
+    if (isKeyUp) s_pressedKeys.erase(virtualKey);
 
     struct KeyBinding {
         char const* setting;
@@ -101,49 +97,46 @@ LRESULT CALLBACK KeyboardProc(
     };
 
     for (const auto&[setting, action, isFirstPlayer] : s_bindings) {
-        auto const key = GeodeKeybindMapper::virtualKeyFromSetting(
-            setting
-        );
-        if (key && virtualKey == *key) {
+        if (auto const key = GeodeKeybindMapper::virtualKeyFromSetting(setting); key && virtualKey == *key) {
             handleButton(wParam, action, isFirstPlayer);
             break;
         }
     }
 
-    if (
-        auto const pauseGameKey = GeodeKeybindMapper::virtualKeyFromSetting("pauseGameKey");
-        !pauseGameKey || virtualKey != static_cast<DWORD>(*pauseGameKey)
-    ) {
+    if (auto const pauseGameKey = GeodeKeybindMapper::virtualKeyFromSetting("pauseGameKey"); pauseGameKey && virtualKey == *pauseGameKey && isKeyDown) {
+        togglePause();
         return CallNextHookEx(s_hook, code, wParam, lParam);
     }
-
-    if (wParam != WM_KEYDOWN) {
-        return CallNextHookEx(s_hook, code, wParam, lParam);
-    }
-
-    queueInMainThread([] {
-        auto const pl = PlayLayer::get();
-        if (!pl) return;
-
-        if (!pl->m_isPaused) {
-            return;
-        }
-        auto const scene = CCDirector::get()->getRunningScene();
-        if (auto const pauseLayer = scene->getChildByType<PauseLayer>(0)) pauseLayer->onResume(nullptr);
-    });
 
     return CallNextHookEx(s_hook, code, wParam, lParam);
 }
 
-$on_mod(Loaded) {
-    s_hook = SetWindowsHookEx(
-        WH_KEYBOARD_LL,
-        KeyboardProc,
-        nullptr,
-        0
-    );
+class $modify(PlayLayer) {
+    bool init(GJGameLevel* level, bool p1, bool p2) {
+        if (!PlayLayer::init(level, p1, p2)) return false;
 
-    if (!s_hook) {
-        log::error("Hook failed: {}", GetLastError());
+        if (!CCEGLView::get()->getIsFullscreen()) {
+            s_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboardProc, nullptr, 0);
+            
+            if (!s_hook) log::error("Hook failed: {}", GetLastError());
+            else log::debug("Hook was created");
+
+            return true;
+        }
+
+        return true;
     }
-}
+
+
+    void onQuit() {
+        if (s_hook) {
+            bool const success = UnhookWindowsHookEx(s_hook);
+            s_hook = nullptr;
+
+            if (success) log::debug("Hook was destroyed");
+            else log::warn("Hook was not destroyed");
+        }
+
+        PlayLayer::onQuit();
+    }
+};
