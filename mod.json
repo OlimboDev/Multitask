@@ -5,7 +5,7 @@
 	},
 	"id": "olimbo.multitask",
 	"name": "Multitask",
-	"version": "v2.0.0",
+	"version": "v2.0.1",
 	"developers": [
 		"Chillsy",
 		"Misha_Opstal"
@@ -21,7 +21,8 @@
 	"tags": [
 		"offline",
 		"enhancement",
-		"utility"
+		"utility",
+		"cheat"
 	],
 	"settings": {
 		"enabled": {
