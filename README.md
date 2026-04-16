@@ -1,5 +1,10 @@
 # Multitask
 
+![Mod Version](https://api.geode-sdk.org/v1/mods/olimbo.multitask/status_badge?stat=version)
+![Downloads](https://api.geode-sdk.org/v1/mods/olimbo.multitask/status_badge?stat=downloads)
+![GD Version](https://api.geode-sdk.org/v1/mods/olimbo.multitask/status_badge?stat=gd_version)
+![Geode Version](https://api.geode-sdk.org/v1/mods/olimbo.multitask/status_badge?stat=geode_version)
+
 ## What is Multitask?
 
 **Multitask** is a Geode mod that lets you play **Geometry Dash** while not in focus.
