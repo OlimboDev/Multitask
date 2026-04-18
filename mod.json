@@ -5,10 +5,10 @@
 	},
 	"id": "olimbo.multitask",
 	"name": "Multitask",
-	"version": "v2.0.1",
+	"version": "v2.0.2",
 	"developers": [
 		"Chillsy",
-		"Misha_Opstal"
+		"MishaOpstal"
 	],
 	"description": "Multitask is a way to allow playing geometry dash in the background.",
 	"links": {
