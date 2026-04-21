@@ -1,3 +1,9 @@
+# 2.0.3
+- Added missing keybinds to GeodeKeybindMapper.
+- Added mouse 4 and mouse 5 support.
+- Split up the code into mouse and keyboard classes.
+- TODO: Add support for multiple keybinds.
+
 # 2.0.2
 - Added a check for when the window is focussed or not.
 - Added a timestamp to our execution of queueButton.
