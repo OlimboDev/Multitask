@@ -146,17 +146,21 @@ public:
         // Controller is already supported without the need of the mod (fun fact).
     };
 
-    static std::optional<int> virtualKeyFromSetting(std::string const& setting) {
+    static std::vector<int> virtualKeysFromSetting(std::string const& setting) {
         auto const keyBind = Mod::get()->getSettingValue<std::vector<Keybind>>(setting);
-        if (keyBind.empty()) return std::nullopt;
+        if (keyBind.empty()) return {};
 
-        // Retrieve the very last key within the bind array (for jokers using something like "CTRL+SHIFT+J" WHEN WE SAID IT'S NOT SUPPORTED)
-        enumKeyCodes const key = keyBind.back().key;
+        std::vector<int> result;
 
-        for (auto const [geodeKey, vkCode]: s_keyTable) {
-            if (geodeKey == key) return vkCode;
+        for (auto const& bind : keyBind) {
+            for (auto const [geodeKey, vkCode]: s_keyTable) {
+                if (geodeKey == bind.key) {
+                    result.push_back(vkCode);
+                    break;
+                }
+            }
         }
 
-        return std::nullopt;
+        return result;
     }
 };

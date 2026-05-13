@@ -2,7 +2,7 @@
 - Added missing keybinds to GeodeKeybindMapper.
 - Added mouse 4 and mouse 5 support.
 - Split up the code into mouse and keyboard classes.
-- TODO: Add support for multiple keybinds.
+- Added support for multiple keybinds for the same action (e.g. jump can be both space and W).
 
 # 2.0.2
 - Added a check for when the window is focussed or not.

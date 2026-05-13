@@ -15,4 +15,7 @@ This allows you to do things like play other games while being able to play Geom
 - Although not required, we highly recommend **changing the keybind before using the mod**. The default keybinds are basic keybinds that are very likely to conflict with other games and apps.
 
 
+- Key combinations (e.g. ctrl + shift + W) are not supported. If you decide to add one anyway it will just be treated as one key (e.g. W).
+
+
 - The keybinds you choose **only work when the game is not focused**. If the game is focused the game behaves like normal.

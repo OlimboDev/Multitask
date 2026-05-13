@@ -93,16 +93,20 @@ void handleVK(DWORD const virtualKey, bool const isKeyDown) {
     WPARAM const wParam = isKeyDown ? WM_KEYDOWN : WM_KEYUP;
 
     for (const auto &[setting, action, isFirstPlayer]: s_bindings) {
-        if (auto const key = GeodeKeybindMapper::virtualKeyFromSetting(setting); key && virtualKey == *key) {
-            handleButton(wParam, action, isFirstPlayer);
-            break;
+        for (int const key : GeodeKeybindMapper::virtualKeysFromSetting(setting)) {
+            if (virtualKey == key) {
+                handleButton(wParam, action, isFirstPlayer);
+                break;
+            }
         }
     }
 
-    if (auto const pauseGameKey = GeodeKeybindMapper::virtualKeyFromSetting("pauseGameKey");
-        pauseGameKey && virtualKey == *pauseGameKey && isKeyDown) {
+    for (int const key : GeodeKeybindMapper::virtualKeysFromSetting("pauseGameKey")) {
+        if (virtualKey == key && isKeyDown) {
             togglePause();
+            break;
         }
+    }
 }
 
 void processInput(DWORD const virtualKey, bool const isKeyDown, bool const isKeyUp) {
