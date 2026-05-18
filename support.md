@@ -1,3 +1,3 @@
 # Thank you for using our mod!
 
-We really appreciate using our mod. We don't have a way to financially support this project. The best way to show support is sharing it with others!
+If you like this mod and would like to support us, we have a [Ko-fi](https://ko-fi.com/olimbo)! Feel free to stop by and feed us peanuts!

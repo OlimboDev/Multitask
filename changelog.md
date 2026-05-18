@@ -1,3 +1,9 @@
+# 2.0.4
+- Added Caching to handleVK so that it doesn't do for loops in for loops anymore.
+- Added a donation link.
+- Fixed a bit of ugly code that we missed.
+- Updated Geode from 5.5.3 to 5.7.1.
+
 # 2.0.3
 - Added missing keybinds to GeodeKeybindMapper.
 - Added mouse 4 and mouse 5 support.

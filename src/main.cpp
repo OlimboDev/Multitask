@@ -6,15 +6,13 @@
 #include <Geode/modify/CCEGLView.hpp>
 
 #include <windows.h>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "GeodeKeybindMapper.h"
 
 using namespace geode::prelude;
-
-static std::unordered_set<DWORD> s_pressedKeys;
-static HHOOK s_keyboardHook = nullptr;
-static HHOOK s_mouseHook    = nullptr;
 
 enum KeyAction {
     Left,
@@ -28,6 +26,11 @@ struct KeyBinding {
     bool isFirstPlayer;
 };
 
+struct CachedBinding {
+    KeyAction action;
+    bool isFirstPlayer;
+};
+
 static KeyBinding const s_bindings[] = {
     {"firstPlayerUpKey", Up, true},
     {"firstPlayerLeftKey", Left, true},
@@ -37,8 +40,30 @@ static KeyBinding const s_bindings[] = {
     {"secondPlayerRightKey", Right, false},
 };
 
+static std::unordered_set<DWORD> s_pressedKeys;
+static std::unordered_map<DWORD, std::vector<CachedBinding>> s_vkBindingCache;
+static std::unordered_set<DWORD> s_pausedKeys;
+static HHOOK s_keyboardHook = nullptr;
+static HHOOK s_mouseHook    = nullptr;
+static HWND s_gameWindow    = nullptr;
+
+static void rebuildBindings() {
+    s_vkBindingCache.clear();
+    s_pausedKeys.clear();
+
+    for (auto const &[setting, action, isFirstPlayer]: s_bindings) {
+        for (int const key : GeodeKeybindMapper::virtualKeysFromSetting(setting)) {
+            s_vkBindingCache[key].emplace_back(action, isFirstPlayer);
+        }
+    }
+
+    for (int const key : GeodeKeybindMapper::virtualKeysFromSetting("pauseGameKey")) {
+        s_pausedKeys.insert(static_cast<DWORD>(key));
+    }
+}
+
 bool isGDFocused() {
-    return GetActiveWindow() == WindowFromDC(wglGetCurrentDC());
+    return GetActiveWindow() == s_gameWindow;
 }
 
 bool exitCheck(int const code) {
@@ -92,28 +117,17 @@ void togglePause() {
 void handleVK(DWORD const virtualKey, bool const isKeyDown) {
     WPARAM const wParam = isKeyDown ? WM_KEYDOWN : WM_KEYUP;
 
-    for (const auto &[setting, action, isFirstPlayer]: s_bindings) {
-        for (int const key : GeodeKeybindMapper::virtualKeysFromSetting(setting)) {
-            if (virtualKey == key) {
-                handleButton(wParam, action, isFirstPlayer);
-                break;
-            }
+    if (auto const it = s_vkBindingCache.find(virtualKey); it != s_vkBindingCache.end()) {
+        for (auto const &[action, isFirstPlayer] : it->second) {
+            handleButton(wParam, action, isFirstPlayer);
         }
     }
 
-    for (int const key : GeodeKeybindMapper::virtualKeysFromSetting("pauseGameKey")) {
-        if (virtualKey == key && isKeyDown) {
-            togglePause();
-            break;
-        }
-    }
+    if (isKeyDown && s_pausedKeys.contains(virtualKey)) togglePause();
 }
 
 void processInput(DWORD const virtualKey, bool const isKeyDown, bool const isKeyUp) {
-    if (isKeyDown) {
-        if (s_pressedKeys.contains(virtualKey)) return;
-        s_pressedKeys.insert(virtualKey);
-    }
+    if (isKeyDown && !s_pressedKeys.insert(virtualKey).second) return;
     if (isKeyUp) s_pressedKeys.erase(virtualKey);
     handleVK(virtualKey, isKeyDown);
 }
@@ -167,10 +181,10 @@ class $modify(PlayLayer) {
         if (!PlayLayer::init(level, p1, p2)) return false;
 
         if (!CCEGLView::get()->getIsFullscreen()) {
-            registerHook(s_keyboardHook, WH_KEYBOARD_LL, keyboardProc, "Keyboard");
-            registerHook(s_mouseHook,    WH_MOUSE_LL,    mouseProc,    "Mouse");
-
-            return true;
+            s_gameWindow = WindowFromDC(wglGetCurrentDC());
+            rebuildBindings();
+            registerHook(s_keyboardHook, WH_KEYBOARD_LL, keyboardProc, "GD_Keyboard");
+            registerHook(s_mouseHook,    WH_MOUSE_LL,    mouseProc,    "GD_Mouse");
         }
 
         return true;
@@ -178,8 +192,9 @@ class $modify(PlayLayer) {
 
     // ReSharper disable once CppHidingFunction
     void onQuit() {
-        unregisterHook(s_keyboardHook, "keyboard");
-        unregisterHook(s_mouseHook, "mouse");
+        unregisterHook(s_keyboardHook, "GD_Keyboard");
+        unregisterHook(s_mouseHook, "GD_Mouse");
+        s_pressedKeys.clear();
         PlayLayer::onQuit();
     }
 };
